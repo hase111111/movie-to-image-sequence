@@ -1,5 +1,7 @@
 ﻿#include <Siv3D.hpp>
 
+#include "system_main.h"
+
 /// 文字列を Image として生成（透明背景）
 Image MakeLabelImage(const Font& font, const String& text) {
   const RectF region = font(text).region();
@@ -12,6 +14,15 @@ Image MakeLabelImage(const Font& font, const String& text) {
 }
 
 void Main() {
+  using movie_to_image_sequence::SystemMain;
+  SystemMain systemMain;
+  if (!systemMain.Initialize()) {
+    return;
+  }
+  systemMain.Main();
+}
+
+void Main_() {
   // ========= 設定 =========
   const FilePath videoPath = U"example.mp4";
 
