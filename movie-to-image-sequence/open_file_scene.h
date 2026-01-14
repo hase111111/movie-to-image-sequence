@@ -10,7 +10,10 @@ class OpenFileScene final {
 
  private:
   void UpdateBar();
-  void DrawPreview();
+  void DrawPreview() const;
+  void DrawOutputOverview() const;
+  int32 GetTotalImageCount() const;
+  double GetMarginMax() const;
 
   Optional<FilePath> movie_file_path_;
   Optional<VideoTexture> video_;
