@@ -34,8 +34,24 @@ void OpenFileScene::Main() {
   }
 
   if (SimpleGUI::ButtonAt(
-          U"Convert!", Vec2{1000, 600}, button_size_w,
+          U"Convert!", Vec2{button_start_x + button_size_w * 1.2, 680},
+          button_size_w,
           video_.has_value() && !video_->isEmpty() && CanConvert())) {
+  }
+
+  if (!video_.has_value()) {
+    FontAsset(U"Font")(U"動画を開かないとコンバートできません．")
+        .draw(20, Vec2{800, 570}, Palette::Red);
+  } else if (video_->isEmpty()) {
+    FontAsset(U"Font")(U"動画の読み込みに失敗しました．")
+        .draw(20, Vec2{800, 570}, Palette::Red);
+  } else if (!CanConvert()) {
+    FontAsset(U"Font")(
+        U"出力される画像が大きすぎます．\n(一辺20000以下にしてください)")
+        .draw(20, Vec2{800, 570}, Palette::Red);
+  } else {
+    FontAsset(U"Font")(U"コンバート可能です！")
+        .draw(20, Vec2{800, 570}, Palette::Green);
   }
 
   // 変換後の画像を変更するバー.
@@ -48,24 +64,7 @@ void OpenFileScene::Main() {
   DrawOutputOverview();
 
   // プレビューの下にファイル情報を表示.
-  FontAsset(U"Font")(U"File").draw(20, 55, 470, Palette::Black);
-  FontAsset(U"Font")(U"Size").draw(20, 55, 500, Palette::Black);
-  FontAsset(U"Font")(U"Frame").draw(20, 55, 530, Palette::Black);
-
-  if (!movie_file_path_.has_value()) {
-    FontAsset(U"Font")(U"動画ファイルを開いてください．")
-        .draw(20, 130, 470, Palette::Red);
-  } else if (video_.has_value() && video_->isEmpty()) {
-    FontAsset(U"Font")(U"動画ファイルを開くのに失敗しました．")
-        .draw(20, 130, 470, Palette::Red);
-  } else {
-    FontAsset(U"Font")(TrimWithTilde(*movie_file_path_))
-        .draw(20, 130, 470, Palette::Black);
-    FontAsset(U"Font")(U"{} x {}"_fmt(video_->width(), video_->height()))
-        .draw(20, 130, 500, Palette::Black);
-    FontAsset(U"Font")(U"{}"_fmt(video_reader_->getFrameCount()))
-        .draw(20, 130, 530, Palette::Black);
-  }
+  DrawMovieDetails();
 }
 
 void OpenFileScene::UpdateBar() {
@@ -114,6 +113,20 @@ void OpenFileScene::UpdateBar() {
   FontAsset(U"Font")(
       U"Tile Size : {} x {}"_fmt(GetTileSize().x, GetTileSize().y))
       .draw(20, start_x + 20, 425, Palette::Black);
+  const Size tile_size = GetTileSize();
+  const int32 col = static_cast<int32>(columns_);
+  const int32 row =
+      (GetTotalImageCount() + col - 1) / col;  // 切り上げで行数を計算.
+  const int32 output_width =
+      col * tile_size.x + static_cast<int32>((col - 1) * margin_);
+  const int32 output_height =
+      row * tile_size.y + static_cast<int32>((row - 1) * margin_);
+  FontAsset(U"Font")(U"Total Width : {} "_fmt(output_width))
+      .draw(20, start_x + 20, 475,
+            20000 < output_width ? Palette::Red : Palette::Black);
+  FontAsset(U"Font")(U"Total Height : {} "_fmt(output_height))
+      .draw(20, start_x + 20, 500,
+            20000 < output_height ? Palette::Red : Palette::Black);
 }
 
 void OpenFileScene::DrawPreview() const {
@@ -134,11 +147,11 @@ void OpenFileScene::DrawPreview() const {
 
 void OpenFileScene::DrawOutputOverview() const {
   const Vec2 base_pos{50, 600};
-  const Size tile_size{100, 55};
-  const RectF left_rect{base_pos, tile_size};
+  const Size image_size{100, 55};
+  const RectF left_rect{base_pos, image_size};
   const RectF right_rect{
-      base_pos.movedBy(20 + tile_size.x + margin_ / GetMarginMax() * 30, 0.0),
-      tile_size};
+      base_pos.movedBy(20 + image_size.x + margin_ / GetMarginMax() * 30, 0.0),
+      image_size};
 
   // 枠線付きの四角形を描画.
   left_rect.draw(Color{40});
@@ -156,8 +169,49 @@ void OpenFileScene::DrawOutputOverview() const {
       .drawAt(15, arrow.center().movedBy(0.0, 65.0), Color{0});
 
   // 画像の分割数を表示.
-  const RectF big_rect{base_pos + Vec2{300, -50}, Size{250, 150}};
+  const RectF big_rect{base_pos + Vec2{300, -40}, Size{250, 150}};
+  const Line col_line{big_rect.tl().movedBy(0, -10),
+                      big_rect.tr().movedBy(0, -10)};
+  const Line row_line{big_rect.tr().movedBy(10, 0),
+                      big_rect.br().movedBy(10, 0)};
+  const Size tile_size = GetTileSize();
+  const int32 col = static_cast<int32>(columns_);
+  const int32 row =
+      (GetTotalImageCount() + col - 1) / col;  // 切り上げで行数を計算.
+  const int32 output_width =
+      col * tile_size.x + static_cast<int32>((col - 1) * margin_);
+  const int32 output_height =
+      row * tile_size.y + static_cast<int32>((row - 1) * margin_);
   big_rect.draw(Color{80});
+  FontAsset(U"Font")(U"Output Image").drawAt(25, big_rect.center(), Color{255});
+
+  col_line.drawDoubleHeadedArrow(2.0, {5.0, 5.0}, Color{0});
+  row_line.drawDoubleHeadedArrow(2.0, {5.0, 5.0}, Color{0});
+  FontAsset(U"Font")(U"col:{} ({}ppx)"_fmt(col, output_width))
+      .drawAt(15, col_line.center().movedBy(0, -10), Color{0});
+  FontAsset(U"Font")(U"row:{} ({}ppx)"_fmt(row, output_height))
+      .draw(15, row_line.center().movedBy(10, 0), Color{0});
+}
+
+void OpenFileScene::DrawMovieDetails() const {
+  FontAsset(U"Font")(U"File").draw(20, 55, 470, Palette::Black);
+  FontAsset(U"Font")(U"Size").draw(20, 55, 500, Palette::Black);
+  FontAsset(U"Font")(U"Frame").draw(20, 55, 530, Palette::Black);
+
+  if (!movie_file_path_.has_value()) {
+    FontAsset(U"Font")(U"動画ファイルを開いてください．")
+        .draw(20, 130, 470, Palette::Red);
+  } else if (video_.has_value() && video_->isEmpty()) {
+    FontAsset(U"Font")(U"動画ファイルを開くのに失敗しました．")
+        .draw(20, 130, 470, Palette::Red);
+  } else {
+    FontAsset(U"Font")(TrimWithTilde(*movie_file_path_))
+        .draw(20, 130, 470, Palette::Black);
+    FontAsset(U"Font")(U"{} x {}"_fmt(video_->width(), video_->height()))
+        .draw(20, 130, 500, Palette::Black);
+    FontAsset(U"Font")(U"{}"_fmt(video_reader_->getFrameCount()))
+        .draw(20, 130, 530, Palette::Black);
+  }
 }
 
 int32 OpenFileScene::GetTotalImageCount() const {

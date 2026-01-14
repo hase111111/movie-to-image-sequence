@@ -12,6 +12,8 @@ class OpenFileScene final {
   void UpdateBar();
   void DrawPreview() const;
   void DrawOutputOverview() const;
+  void DrawMovieDetails() const;
+
   int32 GetTotalImageCount() const;
   double GetMarginMax() const;
   Size GetTileSize() const;

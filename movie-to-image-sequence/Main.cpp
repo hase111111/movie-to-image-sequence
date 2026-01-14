@@ -114,9 +114,9 @@ void Main_() {
 
 void Main() {
   using movie_to_image_sequence::SystemMain;
-  SystemMain systemMain;
-  if (!systemMain.Initialize()) {
+  SystemMain system_main;
+  if (!system_main.Initialize()) {
     return;
   }
-  systemMain.Main();
+  system_main.Main();
 }
