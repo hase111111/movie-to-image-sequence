@@ -16,7 +16,7 @@ void OpenFileScene::Main() {
   const int32 button_start_x{900};
 
   // ファイルを開くボタン.
-  if (SimpleGUI::ButtonAt(U"Open File", Vec2{button_start_x, 100},
+  if (SimpleGUI::ButtonAt(U"Open File", Vec2{button_start_x, 75},
                           button_size_w)) {
     if (movie_file_path_ = Dialog::OpenFile({FileFilter::AllVideoFiles()})) {
       video_ = VideoTexture{*movie_file_path_};
@@ -26,7 +26,7 @@ void OpenFileScene::Main() {
 
   // 開いたファイルを消すボタン.
   if (SimpleGUI::ButtonAt(
-          U"Reset File", Vec2{button_start_x + button_size_w * 1.2, 100},
+          U"Reset File", Vec2{button_start_x + button_size_w * 1.2, 75},
           button_size_w, video_.has_value() && !video_->isEmpty())) {
     movie_file_path_.reset();
     video_.reset();
@@ -65,20 +65,38 @@ void OpenFileScene::Main() {
 }
 
 void OpenFileScene::UpdateBar() {
+  const double start_x{800.0};
+
   // スライダーでmarginの値を変更.
   const double margin_max =
       video_.has_value() ? (std::min)(video_->width(), video_->height()) / 10.0
                          : 100.0;
   SimpleGUI::Slider(U"Margin : {}"_fmt(static_cast<int32>(margin_)), margin_, 0,
-                    margin_max, Vec2{800, 150}, 160.0, 200);
-  SimpleGUI::Slider(U"Columns : {}"_fmt(static_cast<int32>(columns_)), columns_,
-                    1, 20, Vec2{800, 200}, 160.0, 200);
+                    margin_max, Vec2{start_x, 125}, 160.0, 200);
   const double frame_step_max =
       video_reader_.has_value()
           ? (std::max)(1.0, video_reader_->getFrameCount() / 5.0)
           : 20;
   SimpleGUI::Slider(U"Frame Step : {}"_fmt(static_cast<int32>(frame_step_)),
-                    frame_step_, 1, frame_step_max, Vec2{800, 250}, 160.0, 200);
+                    frame_step_, 1, frame_step_max, Vec2{start_x, 175}, 160.0,
+                    200);
+  const int32 total_image_count =
+      video_reader_.has_value()
+          ? static_cast<int32>(video_reader_->getFrameCount() / frame_step_)
+          : 1;
+  FontAsset(U"Font")(U"Total Images : {}"_fmt(total_image_count))
+      .draw(20, start_x + 20, 225, Palette::Black);
+
+  SimpleGUI::Slider(U"Columns : {}"_fmt(static_cast<int32>(columns_)), columns_,
+                    1, 20, Vec2{start_x, 275}, 160.0, 200);
+  const int32 h_image_num =
+      (total_image_count + static_cast<int32>(columns_) - 1) /
+      static_cast<int32>(columns_);
+  FontAsset(U"Font")(U"Rows : {}"_fmt(h_image_num))
+      .draw(20, start_x + 20, 325, Palette::Black);
+
+  SimpleGUI::Slider(U"Scale : {:.2f}x"_fmt(export_scale_), export_scale_, 0.01,
+                    1.0, Vec2{start_x, 400}, 160.0, 200);
 }
 
 void OpenFileScene::DrawPreview() {

@@ -19,6 +19,7 @@ class OpenFileScene final {
   double margin_{20};
   double columns_{1};
   double frame_step_{1};
+  double export_scale_{1.0};
 };
 
 }  // namespace movie_to_image_sequence
