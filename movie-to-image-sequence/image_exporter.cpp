@@ -12,7 +12,8 @@ void ImageExporter::Export(const ExportParameter& param) {
 
   const int32 totalFrames = static_cast<int32>(reader.getFrameCount());
 
-  Font font{param.tile_size.y / 8, Typeface::Bold};
+  const int32 label_size = param.tile_size.y / 8;
+  Font font{static_cast<int32>(label_size * 0.6), Typeface::Bold};
   Array<Image> frames;
   Image frame;
 
@@ -35,7 +36,7 @@ void ImageExporter::Export(const ExportParameter& param) {
 
     // --- 番号Image生成 ---
     const String label = Format(index);
-    Image labelImg = MakeLabelImage(font, label);
+    Image labelImg = MakeLabelImage(label_size, font, label);
 
     // --- 右上に配置 ---
     const Point labelPos(param.tile_size.x - labelImg.width() - 6, 6);
@@ -43,7 +44,13 @@ void ImageExporter::Export(const ExportParameter& param) {
     labelImg.overwrite(scaled_frame, labelPos);
 
     frames << scaled_frame;
+
+    // 進捗更新
+    const int32 progress =
+        static_cast<int32>((static_cast<double>(i) / totalFrames) * 50.0);
+    SetProgress(progress);
   }
+  SetProgress(50);
 
   if (frames.isEmpty()) {
     Print << U"[Error] No frames extracted";
@@ -58,9 +65,9 @@ void ImageExporter::Export(const ExportParameter& param) {
       param.margin + param.columns * (param.tile_size.x + param.margin);
   const int32 height = param.margin + rows * (param.tile_size.y + param.margin);
 
-  Image sheet(width, height, Color(255));  // 白背景
+  Image sheet(width, height, Color{0});  // 白背景
 
-  for (int32 i = 0; i < frames.size(); ++i) {
+  for (int32 i{0}; i < frames.size(); ++i) {
     const int32 r = i / param.columns;
     const int32 c = i % param.columns;
 
@@ -68,22 +75,54 @@ void ImageExporter::Export(const ExportParameter& param) {
                     param.margin + r * (param.tile_size.y + param.margin));
 
     frames[i].overwrite(sheet, pos);
+
+    // 進捗更新
+    const int32 progress =
+        50 +
+        static_cast<int32>((static_cast<double>(i) / frames.size()) * 50.0);
+    SetProgress(progress);
   }
 
-  sheet.save(U"a.png");
-
-  // 確認表示
-  Texture tex(sheet);
+  SetData(sheet);
+  SetProgress(101);
 }
 
-Image ImageExporter::MakeLabelImage(const Font& font, const String& text) {
-  const RectF region = font(text).region();
+Image ImageExporter::MakeLabelImage(const int32 size, const Font& font,
+                                    const String& text) {
+  //  const RectF region = font(text).region();
+  const RectF region{0, 0, size, size};
   Image img{region.size.asPoint(), Color{0, 0}};
 
   // fontをoverwriteで描画
   font(text).overwriteAt(img, region.center());
 
   return img.scaled(1.0);
+}
+
+void ImageExporter::SetData(const Image& image) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  data_ = image;
+}
+
+Image ImageExporter::GetData() const {
+  std::lock_guard<std::mutex> lock(mutex_);
+  return data_;
+}
+
+void ImageExporter::SetProgress(const int32 percent) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  progress_percent_ = percent;
+}
+
+int32 ImageExporter::GetProgress() const {
+  std::lock_guard<std::mutex> lock(mutex_);
+  return progress_percent_;
+}
+
+void ImageExporter::Reset() {
+  std::lock_guard<std::mutex> lock(mutex_);
+  data_ = Image{};
+  progress_percent_ = 0;
 }
 
 }  // namespace movie_to_image_sequence

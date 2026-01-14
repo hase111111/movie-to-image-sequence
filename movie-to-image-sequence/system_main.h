@@ -1,6 +1,8 @@
 ﻿#pragma once
 
 #include <Siv3D.hpp>
+#include <memory>
+#include <thread>
 
 #include "parameter.h"
 
@@ -18,6 +20,7 @@ class SystemMain final {
   };
 
   CurrentScene current_scene_{CurrentScene::OpenFile};
+  std::shared_ptr<std::thread> export_thread_;
 };
 
 }  // namespace movie_to_image_sequence

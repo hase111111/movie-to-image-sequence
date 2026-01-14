@@ -131,10 +131,10 @@ void OpenFileScene::UpdateBar() {
   const int32 output_height =
       row * tile_size.y + static_cast<int32>((row - 1) * margin_);
   FontAsset(U"Font")(U"Total Width : {} "_fmt(output_width))
-      .draw(20, start_x + 20, 475,
+      .draw(20, start_x + 20, 500,
             20000 < output_width ? Palette::Red : Palette::Black);
   FontAsset(U"Font")(U"Total Height : {} "_fmt(output_height))
-      .draw(20, start_x + 20, 500,
+      .draw(20, start_x + 20, 525,
             20000 < output_height ? Palette::Red : Palette::Black);
 }
 

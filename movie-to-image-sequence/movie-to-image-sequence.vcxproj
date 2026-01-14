@@ -115,6 +115,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="idle_scene.cpp" />
     <ClCompile Include="image_exporter.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="open_file_scene.cpp" />
@@ -329,6 +330,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="app_const.h" />
+    <ClInclude Include="idle_scene.h" />
     <ClInclude Include="image_exporter.h" />
     <ClInclude Include="open_file_scene.h" />
     <ClInclude Include="parameter.h" />
