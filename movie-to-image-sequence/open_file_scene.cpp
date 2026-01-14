@@ -33,8 +33,9 @@ void OpenFileScene::Main() {
     video_reader_.reset();
   }
 
-  if (SimpleGUI::ButtonAt(U"Convert!", Vec2{1000, 600}, button_size_w,
-                          video_.has_value() && !video_->isEmpty())) {
+  if (SimpleGUI::ButtonAt(
+          U"Convert!", Vec2{1000, 600}, button_size_w,
+          video_.has_value() && !video_->isEmpty() && CanConvert())) {
   }
 
   // 変換後の画像を変更するバー.
@@ -69,31 +70,50 @@ void OpenFileScene::Main() {
 
 void OpenFileScene::UpdateBar() {
   const double start_x{800.0};
+  const double bar_str_width{180.0};
+  const double bar_width{200.0};
 
-  // スライダーでmarginの値を変更.
+  // スライダー margin.
   SimpleGUI::Slider(U"Margin : {}"_fmt(static_cast<int32>(margin_)), margin_, 0,
-                    GetMarginMax(), Vec2{start_x, 125}, 160.0, 200);
+                    GetMarginMax(), Vec2{start_x, 125}, bar_str_width,
+                    bar_width);
+
+  // スライダー frame step.
   const double frame_step_max =
       video_reader_.has_value()
           ? (std::max)(1.0, video_reader_->getFrameCount() / 5.0)
           : 20;
   SimpleGUI::Slider(U"Frame Step : {}"_fmt(static_cast<int32>(frame_step_)),
-                    frame_step_, 1, frame_step_max, Vec2{start_x, 175}, 160.0,
-                    200);
+                    frame_step_, 1, frame_step_max, Vec2{start_x, 175},
+                    bar_str_width, bar_width);
+  if (SimpleGUI::ButtonAt(
+          U"◁", Vec2{start_x + bar_str_width + bar_width + 25, 195}, 40)) {
+    frame_step_ = (std::max)(1.0, frame_step_ - 1);
+  }
+  if (SimpleGUI::ButtonAt(
+          U"▷", Vec2{start_x + bar_str_width + bar_width + 75, 195}, 40)) {
+    frame_step_ = (std::min)(frame_step_ + 1, frame_step_max);
+  }
 
-  FontAsset(U"Font")(U"Total Images : {}"_fmt(GetTotalImageCount()))
+  FontAsset(U"Font")(U"Total Image Num : {}"_fmt(GetTotalImageCount()))
       .draw(20, start_x + 20, 225, Palette::Black);
 
+  // スライダー columns.
   SimpleGUI::Slider(U"Columns : {}"_fmt(static_cast<int32>(columns_)), columns_,
-                    1, 20, Vec2{start_x, 275}, 160.0, 200);
+                    1, 20, Vec2{start_x, 275}, bar_str_width, bar_width);
+
   const int32 h_image_num =
       (GetTotalImageCount() + static_cast<int32>(columns_) - 1) /
       static_cast<int32>(columns_);
   FontAsset(U"Font")(U"Rows : {}"_fmt(h_image_num))
       .draw(20, start_x + 20, 325, Palette::Black);
 
+  // スライダー export scale.
   SimpleGUI::Slider(U"Scale : {:.2f}x"_fmt(export_scale_), export_scale_, 0.01,
-                    1.0, Vec2{start_x, 375}, 160.0, 200);
+                    1.0, Vec2{start_x, 375}, bar_str_width, bar_width);
+  FontAsset(U"Font")(
+      U"Tile Size : {} x {}"_fmt(GetTileSize().x, GetTileSize().y))
+      .draw(20, start_x + 20, 425, Palette::Black);
 }
 
 void OpenFileScene::DrawPreview() const {
@@ -117,21 +137,33 @@ void OpenFileScene::DrawOutputOverview() const {
   const Size tile_size{100, 55};
   const RectF left_rect{base_pos, tile_size};
   const RectF right_rect{
-      base_pos.movedBy(10 + tile_size.x + margin_ / GetMarginMax() * 30, 0.0),
+      base_pos.movedBy(20 + tile_size.x + margin_ / GetMarginMax() * 30, 0.0),
       tile_size};
 
   // 枠線付きの四角形を描画.
   left_rect.draw(Color{40});
   right_rect.draw(Color{40});
+  FontAsset(U"Font")(U"Image").drawAt(20, left_rect.center(), Color{255});
+  FontAsset(U"Font")(U"Image").drawAt(20, right_rect.center(), Color{255});
 
   // サイズを表す矢印を描画.
+  const Line arrow{left_rect.rightCenter(), right_rect.leftCenter()};
+  const Line disc_line{arrow.center().movedBy(0.0, 50.0), arrow.center()};
+
+  arrow.drawDoubleHeadedArrow(5.0, {5.0, 5.0}, Color{0});
+  disc_line.drawArrow(2.0, {5.0, 5.0}, Color{0});
+  FontAsset(U"Font")(U"Margin {}"_fmt(static_cast<int32>(margin_)))
+      .drawAt(15, arrow.center().movedBy(0.0, 65.0), Color{0});
+
+  // 画像の分割数を表示.
+  const RectF big_rect{base_pos + Vec2{300, -50}, Size{250, 150}};
+  big_rect.draw(Color{80});
 }
 
 int32 OpenFileScene::GetTotalImageCount() const {
   return video_reader_.has_value()
              ? static_cast<int32>(video_reader_->getFrameCount() / frame_step_)
              : 1;
-  ;
 }
 
 double OpenFileScene::GetMarginMax() const {
@@ -139,6 +171,35 @@ double OpenFileScene::GetMarginMax() const {
              ? (std::min)(video_->width(), video_->height()) / 10.0
              : 100.0;
   ;
+}
+
+Size OpenFileScene::GetTileSize() const {
+  // export_scale_ を小数点第3位で四捨五入する.
+  const double scale =
+      std::round(export_scale_ * 100.0) / 100.0;  // 小数点第3位で四捨五入
+  return video_.has_value() ? Size{static_cast<int32>(video_->width() * scale),
+                                   static_cast<int32>(video_->height() * scale)}
+                            : Size{100, 100};
+}
+
+bool OpenFileScene::CanConvert() const {
+  // 画像サイズを取得.
+  const Size tile_size = GetTileSize();
+  const int32 col = static_cast<int32>(columns_);
+  const int32 row =
+      (GetTotalImageCount() + col - 1) / col;  // 切り上げで行数を計算.
+  const int32 output_width =
+      col * tile_size.x + static_cast<int32>((col - 1) * margin_);
+  const int32 output_height =
+      row * tile_size.y + static_cast<int32>((row - 1) * margin_);
+
+  const int32 limit_size = 20000;
+
+  if (output_width <= limit_size && output_height <= limit_size) {
+    return true;
+  }
+
+  return false;
 }
 
 }  // namespace movie_to_image_sequence

@@ -14,6 +14,8 @@ class OpenFileScene final {
   void DrawOutputOverview() const;
   int32 GetTotalImageCount() const;
   double GetMarginMax() const;
+  Size GetTileSize() const;
+  bool CanConvert() const;
 
   Optional<FilePath> movie_file_path_;
   Optional<VideoTexture> video_;
