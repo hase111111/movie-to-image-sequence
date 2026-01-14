@@ -2,11 +2,13 @@
 
 #include <Siv3D.hpp>
 
+#include "parameter.h"
+
 namespace movie_to_image_sequence {
 
 class OpenFileScene final {
  public:
-  void Main();
+  Optional<ExportParameter> Main();
 
  private:
   void UpdateBar();

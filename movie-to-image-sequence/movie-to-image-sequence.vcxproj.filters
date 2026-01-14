@@ -150,6 +150,9 @@
     <ClCompile Include="open_file_scene.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="image_exporter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="App\icon.ico">
@@ -822,6 +825,12 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="open_file_scene.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="image_exporter.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parameter.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

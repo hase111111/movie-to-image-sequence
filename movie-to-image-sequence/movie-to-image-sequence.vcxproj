@@ -115,6 +115,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="image_exporter.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="open_file_scene.cpp" />
     <ClCompile Include="stdafx.cpp">
@@ -328,7 +329,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="app_const.h" />
+    <ClInclude Include="image_exporter.h" />
     <ClInclude Include="open_file_scene.h" />
+    <ClInclude Include="parameter.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="system_main.h" />
   </ItemGroup>

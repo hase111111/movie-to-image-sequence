@@ -3,6 +3,7 @@
 #include <Siv3D.hpp>
 
 #include "app_const.h"
+#include "image_exporter.h"
 #include "open_file_scene.h"
 
 namespace movie_to_image_sequence {
@@ -25,9 +26,26 @@ bool SystemMain::Initialize() {
 
 void SystemMain::Main() {
   OpenFileScene open_file_scene;
+  ImageExporter image_exporter;
 
   while (System::Update()) {
-    open_file_scene.Main();
+    switch (current_scene_) {
+      case SystemMain::CurrentScene::OpenFile: {
+        const auto res = open_file_scene.Main();
+        if (res.has_value()) {
+          // 出力シーンへ移行.
+          image_exporter.Export(*res);
+          current_scene_ = SystemMain::CurrentScene::OutputInProgress;
+        }
+        break;
+      }
+      case SystemMain::CurrentScene::OutputInProgress: {
+        break;
+      }
+      default: {
+        break;
+      }
+    }
   }
 }
 

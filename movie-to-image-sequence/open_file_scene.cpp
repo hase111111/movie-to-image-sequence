@@ -11,7 +11,7 @@ static String TrimWithTilde(const String& text, size_t maxLength = 55) {
   return U"~" + text.substr(text.size() - (maxLength - 1));
 }
 
-void OpenFileScene::Main() {
+Optional<ExportParameter> OpenFileScene::Main() {
   const int32 button_size_w{200};
   const int32 button_start_x{900};
 
@@ -37,6 +37,13 @@ void OpenFileScene::Main() {
           U"Convert!", Vec2{button_start_x + button_size_w * 1.2, 680},
           button_size_w,
           video_.has_value() && !video_->isEmpty() && CanConvert())) {
+    ExportParameter param;
+    param.video_path = *movie_file_path_;
+    param.frame_step = static_cast<int32>(frame_step_);
+    param.tile_size = GetTileSize();
+    param.columns = static_cast<int32>(columns_);
+    param.margin = static_cast<int32>(margin_);
+    return param;
   }
 
   if (!video_.has_value()) {
@@ -65,6 +72,8 @@ void OpenFileScene::Main() {
 
   // プレビューの下にファイル情報を表示.
   DrawMovieDetails();
+
+  return none;
 }
 
 void OpenFileScene::UpdateBar() {
