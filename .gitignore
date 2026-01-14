@@ -458,3 +458,6 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+*.mp4
+**/AS_DEBUG/
