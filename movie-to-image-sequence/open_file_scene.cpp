@@ -2,6 +2,15 @@
 
 namespace movie_to_image_sequence {
 
+static String TrimWithTilde(const String& text, size_t maxLength = 55) {
+  if (text.size() <= maxLength) {
+    return text;
+  }
+
+  // "~" の分だけ 1 文字引く
+  return U"~" + text.substr(text.size() - (maxLength - 1));
+}
+
 void OpenFileScene::Main() {
   const int32 button_size_w{200};
   const int32 button_start_x{900};
@@ -11,6 +20,7 @@ void OpenFileScene::Main() {
                           button_size_w)) {
     if (movie_file_path_ = Dialog::OpenFile({FileFilter::AllVideoFiles()})) {
       video_ = VideoTexture{*movie_file_path_};
+      video_reader_ = VideoReader{*movie_file_path_};
     }
   }
 
@@ -20,20 +30,55 @@ void OpenFileScene::Main() {
           button_size_w, video_.has_value() && !video_->isEmpty())) {
     movie_file_path_.reset();
     video_.reset();
+    video_reader_.reset();
   }
 
   if (SimpleGUI::ButtonAt(U"Convert!", Vec2{1000, 600}, button_size_w,
                           video_.has_value() && !video_->isEmpty())) {
   }
 
+  // 変換後の画像を変更するバー.
+  UpdateBar();
+
   // 画面左に動画プレビュー表示.
   DrawPreview();
 
   // プレビューの下にファイル情報を表示.
-  FontAsset(U"Font")(U"File: ").drawAt(20, 75, 480, Palette::Black);
-  FontAsset(U"Font")(U"Size: ").drawAt(20, 75, 510, Palette::Black);
-  if (movie_file_path_.has_value()) {
+  FontAsset(U"Font")(U"File").draw(20, 55, 470, Palette::Black);
+  FontAsset(U"Font")(U"Size").draw(20, 55, 500, Palette::Black);
+  FontAsset(U"Font")(U"Frame").draw(20, 55, 530, Palette::Black);
+
+  if (!movie_file_path_.has_value()) {
+    FontAsset(U"Font")(U"動画ファイルを開いてください．")
+        .draw(20, 130, 470, Palette::Red);
+  } else if (video_.has_value() && video_->isEmpty()) {
+    FontAsset(U"Font")(U"動画ファイルを開くのに失敗しました．")
+        .draw(20, 130, 470, Palette::Red);
+  } else {
+    FontAsset(U"Font")(TrimWithTilde(*movie_file_path_))
+        .draw(20, 130, 470, Palette::Black);
+    FontAsset(U"Font")(U"{} x {}"_fmt(video_->width(), video_->height()))
+        .draw(20, 130, 500, Palette::Black);
+    FontAsset(U"Font")(U"{}"_fmt(video_reader_->getFrameCount()))
+        .draw(20, 130, 530, Palette::Black);
   }
+}
+
+void OpenFileScene::UpdateBar() {
+  // スライダーでmarginの値を変更.
+  const double margin_max =
+      video_.has_value() ? (std::min)(video_->width(), video_->height()) / 10.0
+                         : 100.0;
+  SimpleGUI::Slider(U"Margin : {}"_fmt(static_cast<int32>(margin_)), margin_, 0,
+                    margin_max, Vec2{800, 150}, 160.0, 200);
+  SimpleGUI::Slider(U"Columns : {}"_fmt(static_cast<int32>(columns_)), columns_,
+                    1, 20, Vec2{800, 200}, 160.0, 200);
+  const double frame_step_max =
+      video_reader_.has_value()
+          ? (std::max)(1.0, video_reader_->getFrameCount() / 5.0)
+          : 20;
+  SimpleGUI::Slider(U"Frame Step : {}"_fmt(static_cast<int32>(frame_step_)),
+                    frame_step_, 1, frame_step_max, Vec2{800, 250}, 160.0, 200);
 }
 
 void OpenFileScene::DrawPreview() {
