@@ -13,15 +13,6 @@ Image MakeLabelImage(const Font& font, const String& text) {
   return img;
 }
 
-void Main() {
-  using movie_to_image_sequence::SystemMain;
-  SystemMain systemMain;
-  if (!systemMain.Initialize()) {
-    return;
-  }
-  systemMain.Main();
-}
-
 void Main_() {
   // ========= 設定 =========
   const FilePath videoPath = U"example.mp4";
@@ -119,4 +110,13 @@ void Main_() {
   while (System::Update()) {
     tex.draw();
   }
+}
+
+void Main() {
+  using movie_to_image_sequence::SystemMain;
+  SystemMain systemMain;
+  if (!systemMain.Initialize()) {
+    return;
+  }
+  systemMain.Main();
 }
